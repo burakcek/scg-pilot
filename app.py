@@ -88,6 +88,7 @@ EN_TEXT = {
     "anonymous": "Anonymous report", "save": "Save", "type": "Type", "status": "Status",
     "agency": "Agency", "scope": "Scope", "municipality": "Municipality", "region": "Region",
     "latitude": "Latitude", "longitude": "Longitude", "use_gps": "Use my GPS location", "send": "Submit",
+    "title": "Title", "description": "Description",
 }
 EN_TYPE_LABELS = {
     "forest_fire": "Forest fire", "smoke": "Smoke", "illegal_logging": "Illegal logging",

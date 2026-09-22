@@ -11,21 +11,20 @@
   <button type="button" id="locate">{{t.get('use_gps','Користи ја мојата GPS локација')}}</button>
   <p id="location-status" role="status"></p>
   <div id="report-map"></div>
-  <small>Кликни на мапата или помести ја ознаката за рачно да ја означиш локацијата.</small>
-  <label>Приоритет<select name="priority">{% for x in priorities %}<option value="{{x}}">{{priority_labels[x]}}</option>{% endfor %}</select></label>
-  <label>M/ETHANE — стандардизирани информации за итен настан
+  <small>{{'Klikoni në hartë ose lëvizni shënuesin për të zgjedhur manualisht vendndodhjen.' if sq else 'Click the map or move the marker to select the location manually.' if en else 'Кликни на мапата или помести ја ознаката за рачно да ја означиш локацијата.'}}</small>
+  <label>{{t.get('priority','Приоритет')}}<select name="priority">{% for x in priorities %}<option value="{{x}}">{{priority_labels[x]}}</option>{% endfor %}</select></label>
+  <label>M/ETHANE — {{'informacione të standardizuara për ngjarje urgjente' if sq else 'standardized emergency incident information' if en else 'стандардизирани информации за итен настан'}}
     <small>
-      Кратко внеси: број на повредени/загрозени лица, точна локација,
-      вид на настан, опасности, пристап до местото, потребна помош и број на лица.
+      {{'Shkurt shkruani: numri i të lënduarve/të rrezikuarve, vendndodhja e saktë, lloji i ngjarjes, rreziqet, qasja, ndihma e nevojshme dhe numri i personave.' if sq else 'Briefly enter: number of injured/endangered people, exact location, incident type, hazards, access, assistance needed and number of people.' if en else 'Кратко внеси: број на повредени/загрозени лица, точна локација, вид на настан, опасности, пристап до местото, потребна помош и број на лица.'}}
     </small>
-    <textarea name="m_ethane" maxlength="2000" placeholder="Пример: 2 повредени; локација; пожар; чад; пристап преку главен пат; потребна брза помош и пожарна; 5 лица на локацијата."></textarea>
+    <textarea name="m_ethane" maxlength="2000" placeholder="{{'Shembull: 2 të lënduar; vendndodhja; zjarr; tym; qasje nga rruga kryesore; nevojiten ambulanca dhe zjarrfikës; 5 persona.' if sq else 'Example: 2 injured; location; fire; smoke; access via main road; ambulance and fire brigade needed; 5 people.' if en else 'Пример: 2 повредени; локација; пожар; чад; пристап преку главен пат; потребна брза помош и пожарна; 5 лица на локацијата.'}}"></textarea>
   </label>
-  <label><input type="checkbox" name="anonymous" id="anonymous" checked> Анонимна пријава (не зачувува име, контакт или корисничка сметка)</label>
+  <label><input type="checkbox" name="anonymous" id="anonymous" checked> {{'Raportim anonim (emri, kontakti dhe llogaria nuk ruhen)' if sq else 'Anonymous report (name, contact and account are not stored)' if en else 'Анонимна пријава (не зачувува име, контакт или корисничка сметка)'}}</label>
   <div id="contact-fields">
-    <label>Име на пријавувач<input name="reporter_name" id="reporter_name"></label>
-    <label>Контакт<input name="contact" id="contact"></label>
+    <label>{{'Emri i raportuesit' if sq else 'Reporter name' if en else 'Име на пријавувач'}}<input name="reporter_name" id="reporter_name"></label>
+    <label>{{'Kontakti' if sq else 'Contact' if en else 'Контакт'}}<input name="contact" id="contact"></label>
   </div>
-  <label>Фотографија (најмногу 5 MB)<input type="file" name="photo" accept="image/*"></label>
+  <label>{{'Fotografi (maksimumi 5 MB)' if sq else 'Photo (maximum 5 MB)' if en else 'Фотографија (најмногу 5 MB)'}}<input type="file" name="photo" accept="image/*"></label>
   <button>{{t.get('send','Испрати')}}</button>
 </form>
 {% endblock %}
@@ -49,13 +48,13 @@
   });
   map.on('click', function (e) { setLocation(e.latlng.lat, e.latlng.lng); });
   document.getElementById('locate').addEventListener('click', function () {
-    if (!navigator.geolocation) { status.textContent = 'GPS не е достапен на овој уред.'; return; }
-    status.textContent = 'Се бара GPS локација…';
+    if (!navigator.geolocation) { status.textContent = '{{"GPS nuk është i disponueshëm në këtë pajisje." if sq else "GPS is not available on this device." if en else "GPS не е достапен на овој уред."}}'; return; }
+    status.textContent = '{{"Po kërkohet vendndodhja GPS…" if sq else "Requesting GPS location…" if en else "Се бара GPS локација…"}}';
     navigator.geolocation.getCurrentPosition(function (p) {
       setLocation(p.coords.latitude, p.coords.longitude);
-      status.textContent = 'Локацијата е преземена од GPS.';
+      status.textContent = '{{"Vendndodhja u mor nga GPS." if sq else "Location received from GPS." if en else "Локацијата е преземена од GPS."}}';
     }, function () {
-      status.textContent = 'Не може да се преземе GPS локацијата. Провери дозволи и обиди се повторно.';
+      status.textContent = '{{"Vendndodhja GPS nuk mund të merret. Kontrolloni lejet dhe provoni përsëri." if sq else "Could not get GPS location. Check permissions and try again." if en else "Не може да се преземе GPS локацијата. Провери дозволи и обиди се повторно."}}';
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
   const anonymous = document.getElementById('anonymous');

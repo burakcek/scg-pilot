@@ -67,6 +67,10 @@ def test_english_language_switch(client):
     client.get("/language/en")
     assert b"Agencies" in client.get("/agencies").data
     assert b"Report incident" in client.get("/report").data
+    report = client.get("/report").data
+    assert b"standardized emergency incident information" in report
+    assert b"Anonymous report" in report
+    assert b"Photo (maximum 5 MB)" in report
 
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
