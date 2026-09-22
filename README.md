@@ -28,6 +28,8 @@ gunicorn --workers 2 --timeout 120 --bind 0.0.0.0:$PORT app:app
 
 Овој demo користи SQLite и локален upload folder. На бесплатниот Render filesystem е ephemeral, па database/uploads може да се изгубат при redeploy или restart. За вистински pilot користи managed PostgreSQL, object storage за фотографии и persistent disk/backup политика; не внесувај реални чувствителни податоци во demo deployment.
 
+Фотографиите се достапни на incident detail преку заштитен `/uploads/<filename>` route. Ако пријавите исчезнуваат по Render redeploy/restart, тоа е поради ephemeral filesystem: додади Persistent Disk и постави `DATABASE=/var/data/scg.sqlite` и `UPLOAD_FOLDER=/var/data/uploads`, или користи managed PostgreSQL/object storage.
+
 ## Roles and access matrix
 
 | Role | Public map/report | Agency dashboard | Operational/contact data | Restricted incidents |

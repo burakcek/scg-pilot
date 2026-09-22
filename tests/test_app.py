@@ -114,6 +114,21 @@ def test_fire_routes_demo_email_to_agency(client):
     assert email["recipient"] == "fire@example.com"
     assert email["delivery_status"] == "demo_queued"
 
+def test_uploaded_photo_is_visible_on_incident_page(client):
+    response = client.post("/report", data={
+        "type": "forest_fire", "title": "Photo fire", "description": "Smoke",
+        "latitude": "41.9", "longitude": "21.4",
+        "photo": (io.BytesIO(b"fake-image"), "fire.jpg"),
+    }, follow_redirects=False)
+    assert response.status_code == 302
+    location = response.headers["Location"]
+    incident_id = location.rsplit("/", 1)[-1]
+    page = client.get(f"/incidents/{incident_id}")
+    assert b"/uploads/" in page.data
+    with client.application.app_context():
+        filename = db().execute("SELECT photo_filename FROM incidents WHERE id=?", (incident_id,)).fetchone()["photo_filename"]
+    assert client.get(f"/uploads/{filename}").status_code == 200
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)

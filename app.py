@@ -8,7 +8,7 @@ from email.message import EmailMessage
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -512,6 +512,15 @@ def register_routes(app):
             values = (uuid.uuid4().hex[:12], incident_type, request.form.get("title","")[:160], request.form.get("description","")[:5000], lat, lon, request.form.get("priority","normal") if request.form.get("priority") in PRIORITIES else "normal", "reported", visibility, None, request.form.get("supporting_agencies",""), request.form.get("m_ethane","")[:2000], reporter_name, contact, filename, current_user.id if current_user.is_authenticated and not anonymous else None, now(), now())
             cur = db().execute("""INSERT INTO incidents(public_id,type,title,description,latitude,longitude,priority,status,visibility,lead_agency_id,supporting_agencies,m_ethane,reporter_name,contact,photo_filename,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", values); db().commit(); audit("incident_created", cur.lastrowid); notify_staff(cur.lastrowid, "new_incident", "Нова пријава", f"Нова пријава: {TYPE_LABELS[incident_type]}", None); route_incident_emails(cur.lastrowid, incident_type, request.form.get("title","")[:160]); flash("Пријавата е зачувана.", "success"); return redirect(url_for("incident_detail", incident_id=cur.lastrowid))
         return render_template("report.html")
+
+    @app.route("/uploads/<path:filename>")
+    def uploaded_file(filename):
+        incident = db().execute(
+            "SELECT visibility FROM incidents WHERE photo_filename=?", (filename,)
+        ).fetchone()
+        if not incident or not can_view(incident):
+            abort(404)
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     @app.route("/incidents/<int:incident_id>", methods=("GET","POST"))
     def incident_detail(incident_id):
