@@ -284,6 +284,26 @@ def register_routes(app):
         session["language"] = language
         return redirect(request.referrer or url_for("index"))
 
+    @app.route("/manifest.webmanifest")
+    def manifest():
+        return jsonify({
+            "name": "SCG Pilot",
+            "short_name": "SCG Pilot",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#123b5d",
+            "description": "Платформа за пријавување и координација на кризни инциденти.",
+            "icons": [{"src": url_for("static", filename="icon.svg"), "sizes": "any", "type": "image/svg+xml"}],
+        })
+
+    @app.route("/service-worker.js")
+    def service_worker():
+        response = app.send_static_file("service-worker.js")
+        response.headers["Content-Type"] = "application/javascript"
+        response.headers["Service-Worker-Allowed"] = "/"
+        return response
+
     @app.route("/register", methods=("GET", "POST"))
     def register():
         if request.method == "POST":
