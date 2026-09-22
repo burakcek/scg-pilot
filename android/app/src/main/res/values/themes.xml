@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.SCGPilot" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/scg_blue</item>
+        <item name="android:navigationBarColor">@color/scg_blue</item>
+        <item name="android:statusBarColor">@color/scg_blue</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

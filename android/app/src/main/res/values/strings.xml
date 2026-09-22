@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">SCG Pilot</string>
+    <string name="offline_title">Нема интернет конекција</string>
+    <string name="offline_message">Провери ја конекцијата и обиди се повторно.</string>
+    <string name="retry">Обиди се повторно</string>
+</resources>

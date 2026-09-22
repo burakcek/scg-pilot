@@ -45,3 +45,15 @@ Incidents support requested types, M/ETHANE, coordinates, reporter/contact, imag
 ## Pilot limitations
 
 Leaflet and OpenStreetMap tiles load from CDN; do not rely on availability during an outage. FIRMS is optional and should be rate-limited/cached in production. No real dispatch, geocoding, SMS, encryption-at-rest, or legal incident classification is included. Validate all deployments with the relevant Macedonian authorities.
+
+## Android апликација
+
+Папката `android/` е Android Studio проект кој го прикажува SCG Pilot како native Android app преку безбеден `WebView`. Поддржува login cookies, Android back navigation, offline/error screen, photo upload и GPS permission за incident report формата. Во web формата локацијата може да се избере со GPS, со клик на Leaflet map или со поместување на marker.
+
+Отвори ја папката `android/` во Android Studio. Production URL може да се постави при build:
+
+```bash
+gradlew assembleDebug -PscgPilotUrl=https://YOUR-RENDER-URL.onrender.com/
+```
+
+APK ќе биде во `android/app/build/outputs/apk/debug/app-debug.apk`. Не оставај placeholder URL во release APK. Android app ги користи истите server-side authorization rules и не е замена за 112.
