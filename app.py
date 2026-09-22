@@ -54,6 +54,7 @@ STATUS_LABELS = {
 }
 PRIORITY_LABELS = {"low": "Низок", "normal": "Нормален", "high": "Висок", "critical": "Критичен"}
 VISIBILITY_LABELS = {"public": "Јавен", "internal": "Внатрешен", "restricted": "Ограничен", "service_only": "Само за надлежната служба"}
+SCOPE_LABELS = {"national": "Национално", "region": "Регионално", "municipality": "Општинско", "restricted": "Ограничено"}
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -92,6 +93,7 @@ def create_app(test_config=None):
         return {"incident_types": INCIDENT_TYPES, "statuses": STATUSES, "priorities": PRIORITIES,
                 "type_labels": TYPE_LABELS, "status_labels": STATUS_LABELS,
                 "priority_labels": PRIORITY_LABELS, "visibility_labels": VISIBILITY_LABELS,
+                "scope_labels": SCOPE_LABELS,
                 "unread_notifications": unread_notifications}
 
     register_routes(app)

@@ -6,12 +6,12 @@
   <label>Тип<select name="type">{% for x in incident_types %}<option value="{{x}}">{{type_labels[x]}}</option>{% endfor %}</select></label>
   <label>Наслов<input name="title" required maxlength="160"></label>
   <label>Опис<textarea name="description" required maxlength="5000"></textarea></label>
-  <label>Latitude<input id="latitude" name="latitude" value="41.998" required></label>
-  <label>Longitude<input id="longitude" name="longitude" value="21.425" required></label>
+  <label>Географска ширина (Latitude)<input id="latitude" name="latitude" value="41.998" required></label>
+  <label>Географска должина (Longitude)<input id="longitude" name="longitude" value="21.425" required></label>
   <button type="button" id="locate">Користи ја мојата GPS локација</button>
   <p id="location-status" role="status"></p>
   <div id="report-map"></div>
-  <small>Кликни на мапата или помести го marker-от за рачно да ја означиш локацијата.</small>
+  <small>Кликни на мапата или помести ја ознаката за рачно да ја означиш локацијата.</small>
   <label>Приоритет<select name="priority">{% for x in priorities %}<option value="{{x}}">{{priority_labels[x]}}</option>{% endfor %}</select></label>
   <label>M/ETHANE — стандардизирани информации за итен настан
     <small>
@@ -25,7 +25,7 @@
     <label>Име на пријавувач<input name="reporter_name" id="reporter_name"></label>
     <label>Контакт<input name="contact" id="contact"></label>
   </div>
-  <label>Фото (max 5MB)<input type="file" name="photo" accept="image/*"></label>
+  <label>Фотографија (најмногу 5 MB)<input type="file" name="photo" accept="image/*"></label>
   <button>Испрати</button>
 </form>
 {% endblock %}
