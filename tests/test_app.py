@@ -63,6 +63,11 @@ def test_albanian_language_switch(client):
     assert b"Agjencit" in client.get("/agencies").data
     assert b"Raporto incident" in client.get("/report").data
 
+def test_english_language_switch(client):
+    client.get("/language/en")
+    assert b"Agencies" in client.get("/agencies").data
+    assert b"Report incident" in client.get("/report").data
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)

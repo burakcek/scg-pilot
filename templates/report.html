@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>{{t.get('report','Пријави инцидент')}}</h1>
-<p>{{'Mund të raportoni pa regjistrim. Për raste urgjente telefononi 112.' if sq else 'Може да пријавиш без регистрација. За итни случаи јави се на 112.'}}</p>
+<p>{{'Mund të raportoni pa regjistrim. Për raste urgjente telefononi 112.' if sq else 'Reports can be submitted without registration. For emergencies call 112.' if en else 'Може да пријавиш без регистрација. За итни случаи јави се на 112.'}}</p>
 <form method="post" enctype="multipart/form-data">
   <label>{{t.get('type','Тип')}}<select name="type">{% for x in incident_types %}<option value="{{x}}">{{type_labels[x]}}</option>{% endfor %}</select></label>
   <label>{{t.get('title','Наслов')}}<input name="title" required maxlength="160"></label>

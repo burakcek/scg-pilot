@@ -2,13 +2,13 @@
 {% block content %}
 <h1>{{type_labels[incident.type]}} — {{incident.title}}</h1>
 <p>{{incident.description}}</p>
-<p><b>{{'Statusi' if sq else 'Статус'}}:</b> {{status_labels[incident.status]}} · <b>{{'Prioriteti' if sq else 'Приоритет'}}:</b> {{priority_labels[incident.priority]}}</p>
+<p><b>{{'Statusi' if sq else 'Status' if en else 'Статус'}}:</b> {{status_labels[incident.status]}} · <b>{{'Prioriteti' if sq else 'Priority' if en else 'Приоритет'}}:</b> {{priority_labels[incident.priority]}}</p>
 <div id="map"></div>
 {% if not safe %}
-<h2>{{'Detaje operative' if sq else 'Оперативни детали'}}</h2>
+<h2>{{'Detaje operative' if sq else 'Operational details' if en else 'Оперативни детали'}}</h2>
 <p><b>M/ETHANE — {{'informacione për ngjarjen urgjente' if sq else 'информации за итен настан'}}:</b> {{incident.m_ethane or ('Nuk është plotësuar' if sq else 'Не е внесено')}}<br>{{'Raportuesi' if sq else 'Пријавувач'}}: {{incident.reporter_name or ('Anonim' if sq else 'Анонимно')}} · {{'Kontakti' if sq else 'Контакт'}}: {{incident.contact or ('Nuk është dhënë' if sq else 'Не е наведен')}}</p>
 <form method="post">
-  <label>{{'Statusi' if sq else 'Статус'}}<select name="status">{% for x in statuses %}<option value="{{x}}" {% if x==incident.status %}selected{% endif %}>{{status_labels[x]}}</option>{% endfor %}</select></label>
+  <label>{{'Statusi' if sq else 'Status' if en else 'Статус'}}<select name="status">{% for x in statuses %}<option value="{{x}}" {% if x==incident.status %}selected{% endif %}>{{status_labels[x]}}</option>{% endfor %}</select></label>
   <label>{{'Prioriteti' if sq else 'Приоритет'}}<select name="priority">{% for x in priorities %}<option value="{{x}}" {% if x==incident.priority %}selected{% endif %}>{{priority_labels[x]}}</option>{% endfor %}</select></label>
   <label>{{'Dukshmëria' if sq else 'Видливост'}}<select name="visibility">{% for x in ['public','internal','restricted','service_only'] %}<option value="{{x}}" {% if x==incident.visibility %}selected{% endif %}>{{visibility_labels[x]}}</option>{% endfor %}</select></label>
   <label>{{'Agjencia udhëheqëse' if sq else 'Водечка агенција'}}<select name="lead_agency_id"><option value="">--</option>{% for a in agencies %}<option value="{{a.id}}" {% if a.id==incident.lead_agency_id %}selected{% endif %}>{{a.name}}</option>{% endfor %}</select></label>

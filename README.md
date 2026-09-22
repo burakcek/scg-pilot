@@ -52,6 +52,8 @@ M/ETHANE е задржан како меѓународен оперативен 
 
 Во навигацијата има избор `МК / SQ`. Изборот `SQ` го менува интерфејсот на албански и се зачувува во сесијата: навигација, пријава, типови, статуси, приоритети, агенции, dashboard, известувања и incident detail. Отвори `/language/sq` за албански или `/language/mk` за македонски. Внатрешните database/API кодови остануваат непроменети.
 
+Достапен е и избор `EN` за целосен англиски интерфејс преку `/language/en`.
+
 ## Pilot limitations
 
 Leaflet and OpenStreetMap tiles load from CDN; do not rely on availability during an outage. FIRMS is optional and should be rate-limited/cached in production. No real dispatch, geocoding, SMS, encryption-at-rest, or legal incident classification is included. Validate all deployments with the relevant Macedonian authorities.

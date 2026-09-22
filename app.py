@@ -80,6 +80,29 @@ SQ_TEXT = {
     "latitude": "Gjerësia gjeografike", "longitude": "Gjatësia gjeografike",
     "use_gps": "Përdor vendndodhjen time GPS", "send": "Dërgo",
 }
+EN_TEXT = {
+    "report": "Report incident", "agencies": "Agencies", "dashboard": "Dashboard",
+    "notifications": "Notifications", "login": "Login", "register": "Register", "logout": "Log out",
+    "submit": "Submit", "email": "Email", "name": "Name", "password": "Password",
+    "title": "Title", "description": "Description", "priority": "Priority", "photo": "Photo",
+    "anonymous": "Anonymous report", "save": "Save", "type": "Type", "status": "Status",
+    "agency": "Agency", "scope": "Scope", "municipality": "Municipality", "region": "Region",
+    "latitude": "Latitude", "longitude": "Longitude", "use_gps": "Use my GPS location", "send": "Submit",
+}
+EN_TYPE_LABELS = {
+    "forest_fire": "Forest fire", "smoke": "Smoke", "illegal_logging": "Illegal logging",
+    "house_theft": "House theft", "illegal_transport": "Illegal transport",
+    "illegal_border_crossing": "Illegal border crossing", "illegal_construction": "Illegal construction",
+    "flood": "Flood", "rescue": "Rescue", "medical_emergency": "Medical emergency",
+}
+EN_STATUS_LABELS = {
+    "reported": "Reported", "triaged": "Triaged", "acknowledged": "Acknowledged", "verified": "Verified",
+    "assigned": "Assigned", "in_progress": "In progress", "contained": "Contained", "resolved": "Resolved",
+    "closed": "Closed", "reopened": "Reopened", "false_report": "False report", "duplicate": "Duplicate",
+}
+EN_PRIORITY_LABELS = {"low": "Low", "normal": "Normal", "high": "High", "critical": "Critical"}
+EN_VISIBILITY_LABELS = {"public": "Public", "internal": "Internal", "restricted": "Restricted", "service_only": "Service only"}
+EN_SCOPE_LABELS = {"national": "National", "region": "Regional", "municipality": "Municipal", "restricted": "Restricted"}
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -112,6 +135,8 @@ def create_app(test_config=None):
         language = session.get("language", "mk")
         if language == "sq":
             labels = (SQ_TYPE_LABELS, SQ_STATUS_LABELS, SQ_PRIORITY_LABELS, SQ_VISIBILITY_LABELS, SQ_SCOPE_LABELS)
+        elif language == "en":
+            labels = (EN_TYPE_LABELS, EN_STATUS_LABELS, EN_PRIORITY_LABELS, EN_VISIBILITY_LABELS, EN_SCOPE_LABELS)
         else:
             labels = (TYPE_LABELS, STATUS_LABELS, PRIORITY_LABELS, VISIBILITY_LABELS, SCOPE_LABELS)
         unread_notifications = 0
@@ -124,7 +149,8 @@ def create_app(test_config=None):
                 "type_labels": labels[0], "status_labels": labels[1],
                 "priority_labels": labels[2], "visibility_labels": labels[3],
                 "scope_labels": labels[4], "language": language,
-                "sq": language == "sq", "t": SQ_TEXT if language == "sq" else {},
+                "sq": language == "sq", "en": language == "en",
+                "t": SQ_TEXT if language == "sq" else EN_TEXT if language == "en" else {},
                 "unread_notifications": unread_notifications}
 
     register_routes(app)
@@ -252,7 +278,7 @@ def register_routes(app):
 
     @app.route("/language/<language>")
     def set_language(language):
-        if language not in ("mk", "sq"):
+        if language not in ("mk", "sq", "en"):
             abort(404)
         session["language"] = language
         return redirect(request.referrer or url_for("index"))

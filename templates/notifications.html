@@ -7,9 +7,9 @@
   <li class="{% if not n.is_read %}unread{% endif %}">
     <strong>{{n.title}}</strong> — {{n.message}}
     <small>{{n.created_at}}</small>
-    {% if n.incident_id %}<a href="{{url_for('incident_detail', incident_id=n.incident_id)}}">{{'Hap incidentin' if sq else 'Отвори инцидент'}}</a>{% endif %}
+    {% if n.incident_id %}<a href="{{url_for('incident_detail', incident_id=n.incident_id)}}">{{'Hap incidentin' if sq else 'Open incident' if en else 'Отвори инцидент'}}</a>{% endif %}
   </li>
 {% endfor %}
 </ul>
-{% else %}<p>{{'Nuk ka njoftime.' if sq else 'Нема известувања.'}}</p>{% endif %}
+{% else %}<p>{{'Nuk ka njoftime.' if sq else 'No notifications.' if en else 'Нема известувања.'}}</p>{% endif %}
 {% endblock %}
