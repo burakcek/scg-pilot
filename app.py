@@ -215,7 +215,10 @@ def register_routes(app):
             visibility = "public" if not current_user.is_authenticated or current_user.role == "citizen" else request.form.get("visibility", "internal")
             if visibility not in VISIBILITIES:
                 visibility = "internal"
-            values = (uuid.uuid4().hex[:12], incident_type, request.form.get("title","")[:160], request.form.get("description","")[:5000], lat, lon, request.form.get("priority","normal") if request.form.get("priority") in PRIORITIES else "normal", "reported", visibility, None, request.form.get("supporting_agencies",""), request.form.get("m_ethane","")[:2000], request.form.get("reporter_name","")[:120], request.form.get("contact","")[:120], filename, current_user.id if current_user.is_authenticated else None, now(), now())
+            anonymous = request.form.get("anonymous") == "on"
+            reporter_name = "" if anonymous else request.form.get("reporter_name", "")[:120]
+            contact = "" if anonymous else request.form.get("contact", "")[:120]
+            values = (uuid.uuid4().hex[:12], incident_type, request.form.get("title","")[:160], request.form.get("description","")[:5000], lat, lon, request.form.get("priority","normal") if request.form.get("priority") in PRIORITIES else "normal", "reported", visibility, None, request.form.get("supporting_agencies",""), request.form.get("m_ethane","")[:2000], reporter_name, contact, filename, current_user.id if current_user.is_authenticated and not anonymous else None, now(), now())
             cur = db().execute("""INSERT INTO incidents(public_id,type,title,description,latitude,longitude,priority,status,visibility,lead_agency_id,supporting_agencies,m_ethane,reporter_name,contact,photo_filename,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", values); db().commit(); audit("incident_created", cur.lastrowid); flash("Пријавата е зачувана.", "success"); return redirect(url_for("incident_detail", incident_id=cur.lastrowid))
         return render_template("report.html")
 

@@ -24,6 +24,23 @@ def test_public_report_and_map(client):
     assert r.status_code == 302
     assert client.get("/api/incidents").json[0]["title"] == "Test"
 
+def test_anonymous_report_does_not_store_identity(client):
+    client.post("/report", data={
+        "type": "forest_fire",
+        "title": "Anonymous",
+        "description": "Smoke",
+        "latitude": "41.9",
+        "longitude": "21.4",
+        "anonymous": "on",
+        "reporter_name": "Should not persist",
+        "contact": "should-not-persist@example.com",
+    })
+    with client.application.app_context():
+        row = db().execute("SELECT reporter_name, contact, created_by FROM incidents WHERE title=?", ("Anonymous",)).fetchone()
+    assert row["reporter_name"] == ""
+    assert row["contact"] == ""
+    assert row["created_by"] is None
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)
