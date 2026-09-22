@@ -178,7 +178,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
       name TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('citizen','agency','admin','police')),
-      agency_id INTEGER, municipality TEXT, region TEXT, created_at TEXT NOT NULL
+      agency_id INTEGER, municipality TEXT, region TEXT, is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS agencies (
       id INTEGER PRIMARY KEY, name TEXT NOT NULL, name_en TEXT NOT NULL,
@@ -209,6 +210,11 @@ def init_db():
         except sqlite3.OperationalError as exc:
             if "duplicate column name" not in str(exc).lower():
                 raise
+    try:
+        database.execute("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")
+    except sqlite3.OperationalError as exc:
+        if "duplicate column name" not in str(exc).lower():
+            raise
     if database.execute("SELECT COUNT(*) FROM agencies").fetchone()[0] == 0:
         database.executemany("INSERT INTO agencies(name,name_en,scope,municipality,region) VALUES (?,?,?,?,?)",
                              [(a, en, scope, "Центар" if scope == "municipality" else None, "Скопски" if scope == "region" else None) for a,en,scope in AGENCIES])
@@ -219,7 +225,7 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    row = db().execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+    row = db().execute("SELECT * FROM users WHERE id=? AND is_active=1", (user_id,)).fetchone()
     return User(row) if row else None
 
 def now(): return datetime.now(timezone.utc).isoformat()
@@ -250,6 +256,9 @@ def roles_required(*roles):
             return view(*args, **kwargs)
         return wrapped
     return decorator
+
+def admin_required(view):
+    return roles_required("admin")(view)
 def can_view(incident):
     if incident["visibility"] == "public": return True
     if not current_user.is_authenticated: return False
@@ -328,6 +337,77 @@ def register_routes(app):
     @app.route("/logout")
     @login_required
     def logout(): logout_user(); return redirect(url_for("index"))
+
+    @app.route("/admin/users")
+    @admin_required
+    def admin_users():
+        users = db().execute(
+            "SELECT u.*, a.name AS agency_name FROM users u LEFT JOIN agencies a ON a.id=u.agency_id "
+            "ORDER BY u.id DESC"
+        ).fetchall()
+        agencies = db().execute("SELECT id, name FROM agencies ORDER BY name").fetchall()
+        return render_template("admin_users.html", users=users, agencies=agencies, roles=ROLES)
+
+    @app.post("/admin/users/create")
+    @admin_required
+    def admin_create_user():
+        email = request.form.get("email", "").strip().lower()
+        name = request.form.get("name", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "citizen")
+        agency_id = request.form.get("agency_id") or None
+        if not email or not name or len(password) < 8 or role not in ROLES:
+            flash("Невалидни податоци. Лозинката мора да има најмалку 8 знаци.", "error")
+            return redirect(url_for("admin_users"))
+        try:
+            db().execute(
+                "INSERT INTO users(email,password_hash,name,role,agency_id,municipality,region,is_active,created_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
+                (email, generate_password_hash(password), name, role, agency_id,
+                 request.form.get("municipality", "").strip() or None,
+                 request.form.get("region", "").strip() or None, 1, now()),
+            )
+            db().commit()
+            audit("admin_user_created", details=f"user={email},role={role}")
+            flash("Корисникот е креиран.", "success")
+        except sqlite3.IntegrityError:
+            db().rollback()
+            flash("Е-поштата веќе постои.", "error")
+        return redirect(url_for("admin_users"))
+
+    @app.post("/admin/users/<int:user_id>/update")
+    @admin_required
+    def admin_update_user(user_id):
+        role = request.form.get("role", "citizen")
+        if role not in ROLES:
+            abort(400)
+        if user_id == current_user.id and role != "admin":
+            flash("Не може да се отстрани сопствената admin улога.", "error")
+            return redirect(url_for("admin_users"))
+        db().execute(
+            "UPDATE users SET name=?, role=?, agency_id=?, municipality=?, region=?, is_active=? WHERE id=?",
+            (request.form.get("name", "").strip(), role, request.form.get("agency_id") or None,
+             request.form.get("municipality", "").strip() or None,
+             request.form.get("region", "").strip() or None,
+             1 if request.form.get("is_active") == "on" else 0, user_id),
+        )
+        db().commit()
+        audit("admin_user_updated", details=f"user_id={user_id},role={role}")
+        flash("Корисникот е ажуриран.", "success")
+        return redirect(url_for("admin_users"))
+
+    @app.post("/admin/users/<int:user_id>/reset-password")
+    @admin_required
+    def admin_reset_password(user_id):
+        password = request.form.get("password", "")
+        if len(password) < 8:
+            flash("Лозинката мора да има најмалку 8 знаци.", "error")
+            return redirect(url_for("admin_users"))
+        db().execute("UPDATE users SET password_hash=? WHERE id=?", (generate_password_hash(password), user_id))
+        db().commit()
+        audit("admin_password_reset", details=f"user_id={user_id}")
+        flash("Лозинката е ресетирана.", "success")
+        return redirect(url_for("admin_users"))
 
     @app.route("/notifications")
     @roles_required("agency", "admin", "police")
@@ -439,7 +519,7 @@ def register_routes(app):
     def create_admin():
         email = input("Admin email: ").strip().lower(); password = input("Password (8+): ")
         if len(password) < 8: raise SystemExit("Password too short")
-        db().execute("INSERT INTO users(email,password_hash,name,role,created_at) VALUES (?,?,?,?,?)", (email, generate_password_hash(password), "Administrator", "admin", now())); db().commit(); print("Admin created")
+        db().execute("INSERT INTO users(email,password_hash,name,role,is_active,created_at) VALUES (?,?,?,?,?,?)", (email, generate_password_hash(password), "Administrator", "admin", 1, now())); db().commit(); print("Admin created")
     @app.cli.command("create-account")
     def create_account():
         """Provision agency/police accounts (never exposed as public registration)."""

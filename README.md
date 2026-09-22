@@ -40,6 +40,16 @@ gunicorn --workers 2 --timeout 120 --bind 0.0.0.0:$PORT app:app
 Public registration can only create `citizen`. Agency, police, and admin accounts must be provisioned by an administrator/CLI. `flask --app app create-admin` creates an admin interactively. Demo seed account: `demo@scg.mk` / `DemoPass123!`.
 Use `flask --app app create-account` to provision a non-public `agency` or `police` account and optionally attach its agency ID.
 
+### Admin panel
+
+Bootstrap the first administrator from the server shell:
+
+```bash
+flask --app app create-admin
+```
+
+Препорачан email за главниот администратор е `rcseverscg@gmail.com`; лозинката внеси ја интерактивно и не ја запишувај во repository. По login, admin ќе го види **Админ панел** и може да креира/уредува `citizen`, `agency`, `police` и `admin` профили, да додели агенција, municipality/region scope, да активира/деактивира профил и да ресетира лозинка. Секоја промена се запишува во audit log. Јавната регистрација сè уште може да креира само `citizen`.
+
 Incidents support requested types, M/ETHANE, coordinates, reporter/contact, image upload (5 MB application limit), lead/supporting agencies, visibility, priority and lifecycle statuses. Audit entries cover login, dashboard access, create and changes. This demo's service authorization is role-based; production must add verified agency scope, SSO/MFA, retention policy, malware scanning and immutable audit storage.
 
 M/ETHANE е задржан како меѓународен оперативен термин, но во формата има македонско објаснување: број на загрозени/повредени, локација, вид на настан, опасности, пристап, потребна помош и број на лица.

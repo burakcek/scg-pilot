@@ -1,6 +1,7 @@
 import io
 import pytest
 from app import create_app, db
+from werkzeug.security import generate_password_hash
 
 @pytest.fixture()
 def client(tmp_path):
@@ -76,6 +77,25 @@ def test_install_assets_are_available(client):
     assert client.get("/manifest.webmanifest").status_code == 200
     assert client.get("/service-worker.js").status_code == 200
     assert b"install-app" in client.get("/").data
+
+def test_admin_can_manage_users(client):
+    with client.application.app_context():
+        db().execute(
+            "INSERT INTO users(email,password_hash,name,role,is_active,created_at) VALUES (?,?,?,?,?,?)",
+            ("admin@example.com", generate_password_hash("AdminPass1!"), "Admin", "admin", 1, "now"),
+        )
+        db().commit()
+    client.post("/login", data={"email": "admin@example.com", "password": "AdminPass1!"})
+    assert client.get("/admin/users").status_code == 200
+    response = client.post("/admin/users/create", data={
+        "email": "staff@example.com", "name": "Staff", "password": "StaffPass1!",
+        "role": "agency", "municipality": "Центар", "region": "Скопски",
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    with client.application.app_context():
+        user = db().execute("SELECT role, municipality FROM users WHERE email=?", ("staff@example.com",)).fetchone()
+    assert user["role"] == "agency"
+    assert user["municipality"] == "Центар"
 
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
