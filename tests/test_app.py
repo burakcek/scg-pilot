@@ -57,6 +57,12 @@ def test_staff_notifications_are_created_for_public_report(client):
         count = db().execute("SELECT COUNT(*) FROM notifications WHERE kind='new_incident'").fetchone()[0]
     assert count == 1
 
+def test_albanian_language_switch(client):
+    response = client.get("/language/sq", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Agjencit" in client.get("/agencies").data
+    assert b"Raporto incident" in client.get("/report").data
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)

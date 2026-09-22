@@ -48,6 +48,10 @@ M/ETHANE е задржан како меѓународен оперативен 
 
 Демо верзијата има in-app notifications: службениците (agency/police/admin) гледаат бројач во навигацијата и страница „Известувања“. Се креира известување за нова пријава, доделен инцидент и промена на статус; достапен е и `/api/notifications` endpoint за Android/WebView polling. За вистински Android push notifications додај Firebase Cloud Messaging credentials, device-token регистрација и server-side push worker; тие secrets намерно не се вклучени во repository.
 
+## Shqip / Албански јазик
+
+Во навигацијата има избор `МК / SQ`. Изборот `SQ` го менува интерфејсот на албански и се зачувува во сесијата: навигација, пријава, типови, статуси, приоритети, агенции, dashboard, известувања и incident detail. Отвори `/language/sq` за албански или `/language/mk` за македонски. Внатрешните database/API кодови остануваат непроменети.
+
 ## Pilot limitations
 
 Leaflet and OpenStreetMap tiles load from CDN; do not rely on availability during an outage. FIRMS is optional and should be rate-limited/cached in production. No real dispatch, geocoding, SMS, encryption-at-rest, or legal incident classification is included. Validate all deployments with the relevant Macedonian authorities.

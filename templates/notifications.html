@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Известувања</h1>
+<h1>{{t.get('notifications','Известувања')}}</h1>
 {% if notifications %}
 <ul class="notifications">
 {% for n in notifications %}
   <li class="{% if not n.is_read %}unread{% endif %}">
     <strong>{{n.title}}</strong> — {{n.message}}
     <small>{{n.created_at}}</small>
-    {% if n.incident_id %}<a href="{{url_for('incident_detail', incident_id=n.incident_id)}}">Отвори инцидент</a>{% endif %}
+    {% if n.incident_id %}<a href="{{url_for('incident_detail', incident_id=n.incident_id)}}">{{'Hap incidentin' if sq else 'Отвори инцидент'}}</a>{% endif %}
   </li>
 {% endfor %}
 </ul>
-{% else %}<p>Нема известувања.</p>{% endif %}
+{% else %}<p>{{'Nuk ka njoftime.' if sq else 'Нема известувања.'}}</p>{% endif %}
 {% endblock %}

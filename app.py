@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -55,6 +55,31 @@ STATUS_LABELS = {
 PRIORITY_LABELS = {"low": "Низок", "normal": "Нормален", "high": "Висок", "critical": "Критичен"}
 VISIBILITY_LABELS = {"public": "Јавен", "internal": "Внатрешен", "restricted": "Ограничен", "service_only": "Само за надлежната служба"}
 SCOPE_LABELS = {"national": "Национално", "region": "Регионално", "municipality": "Општинско", "restricted": "Ограничено"}
+SQ_TYPE_LABELS = {
+    "forest_fire": "Zjarr pyjor", "smoke": "Tym", "illegal_logging": "Prerje ilegale",
+    "house_theft": "Vjedhje në shtëpi", "illegal_transport": "Transport ilegal",
+    "illegal_border_crossing": "Kalimi ilegal i kufirit", "illegal_construction": "Ndërtim ilegal",
+    "flood": "Përmbytje", "rescue": "Shpëtim", "medical_emergency": "Urgjencë mjekësore",
+}
+SQ_STATUS_LABELS = {
+    "reported": "I raportuar", "triaged": "I klasifikuar", "acknowledged": "Pranim i konfirmuar",
+    "verified": "I verifikuar", "assigned": "I caktuar", "in_progress": "Në proces",
+    "contained": "Nën kontroll", "resolved": "I zgjidhur", "closed": "I mbyllur",
+    "reopened": "Rihapur", "false_report": "Raportim i rremë", "duplicate": "Dublikatë",
+}
+SQ_PRIORITY_LABELS = {"low": "I ulët", "normal": "Normal", "high": "I lartë", "critical": "Kritik"}
+SQ_VISIBILITY_LABELS = {"public": "Publik", "internal": "I brendshëm", "restricted": "I kufizuar", "service_only": "Vetëm për shërbimin përgjegjës"}
+SQ_SCOPE_LABELS = {"national": "Kombëtar", "region": "Rajonal", "municipality": "Komunal", "restricted": "I kufizuar"}
+SQ_TEXT = {
+    "report": "Raporto incident", "agencies": "Agjencitë", "dashboard": "Paneli i kontrollit",
+    "notifications": "Njoftimet", "login": "Hyrje", "register": "Regjistrim", "logout": "Dilni",
+    "submit": "Dërgo", "email": "E-mail", "name": "Emri", "password": "Fjalëkalimi",
+    "title": "Titulli", "description": "Përshkrimi", "priority": "Prioriteti", "photo": "Fotografi",
+    "anonymous": "Raportim anonim", "save": "Ruaj", "type": "Lloji", "status": "Statusi",
+    "agency": "Agjencia", "scope": "Fushëveprimi", "municipality": "Komuna", "region": "Rajoni",
+    "latitude": "Gjerësia gjeografike", "longitude": "Gjatësia gjeografike",
+    "use_gps": "Përdor vendndodhjen time GPS", "send": "Dërgo",
+}
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -84,6 +109,11 @@ def create_app(test_config=None):
 
     @app.context_processor
     def inject_globals():
+        language = session.get("language", "mk")
+        if language == "sq":
+            labels = (SQ_TYPE_LABELS, SQ_STATUS_LABELS, SQ_PRIORITY_LABELS, SQ_VISIBILITY_LABELS, SQ_SCOPE_LABELS)
+        else:
+            labels = (TYPE_LABELS, STATUS_LABELS, PRIORITY_LABELS, VISIBILITY_LABELS, SCOPE_LABELS)
         unread_notifications = 0
         if current_user.is_authenticated and current_user.role in ("agency", "admin", "police"):
             unread_notifications = db().execute(
@@ -91,9 +121,10 @@ def create_app(test_config=None):
                 (current_user.id,),
             ).fetchone()[0]
         return {"incident_types": INCIDENT_TYPES, "statuses": STATUSES, "priorities": PRIORITIES,
-                "type_labels": TYPE_LABELS, "status_labels": STATUS_LABELS,
-                "priority_labels": PRIORITY_LABELS, "visibility_labels": VISIBILITY_LABELS,
-                "scope_labels": SCOPE_LABELS,
+                "type_labels": labels[0], "status_labels": labels[1],
+                "priority_labels": labels[2], "visibility_labels": labels[3],
+                "scope_labels": labels[4], "language": language,
+                "sq": language == "sq", "t": SQ_TEXT if language == "sq" else {},
                 "unread_notifications": unread_notifications}
 
     register_routes(app)
@@ -218,6 +249,13 @@ def register_routes(app):
     def index():
         rows = db().execute("SELECT id,public_id,type,title,latitude,longitude,priority,status,created_at FROM incidents WHERE visibility='public' ORDER BY id DESC").fetchall()
         return render_template("index.html", incidents=rows)
+
+    @app.route("/language/<language>")
+    def set_language(language):
+        if language not in ("mk", "sq"):
+            abort(404)
+        session["language"] = language
+        return redirect(request.referrer or url_for("index"))
 
     @app.route("/register", methods=("GET", "POST"))
     def register():
