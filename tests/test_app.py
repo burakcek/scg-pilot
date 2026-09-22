@@ -41,6 +41,22 @@ def test_anonymous_report_does_not_store_identity(client):
     assert row["contact"] == ""
     assert row["created_by"] is None
 
+def test_staff_notifications_are_created_for_public_report(client):
+    with client.application.app_context():
+        db().execute(
+            "INSERT INTO users(email,password_hash,name,role,created_at) VALUES (?,?,?,?,?)",
+            ("police@example.com", "hash", "Police", "police", "now"),
+        )
+        db().commit()
+    client.post("/report", data={
+        "type": "flood", "title": "Flood", "description": "Water",
+        "latitude": "41.9", "longitude": "21.4", "anonymous": "on",
+    })
+    client.post("/login", data={"email": "police@example.com", "password": "wrong"})
+    with client.application.app_context():
+        count = db().execute("SELECT COUNT(*) FROM notifications WHERE kind='new_incident'").fetchone()[0]
+    assert count == 1
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)

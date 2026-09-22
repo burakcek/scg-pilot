@@ -44,6 +44,10 @@ Incidents support requested types, M/ETHANE, coordinates, reporter/contact, imag
 
 M/ETHANE е задржан како меѓународен оперативен термин, но во формата има македонско објаснување: број на загрозени/повредени, локација, вид на настан, опасности, пристап, потребна помош и број на лица.
 
+## Известувања за службеници
+
+Демо верзијата има in-app notifications: службениците (agency/police/admin) гледаат бројач во навигацијата и страница „Известувања“. Се креира известување за нова пријава, доделен инцидент и промена на статус; достапен е и `/api/notifications` endpoint за Android/WebView polling. За вистински Android push notifications додај Firebase Cloud Messaging credentials, device-token регистрација и server-side push worker; тие secrets намерно не се вклучени во repository.
+
 ## Pilot limitations
 
 Leaflet and OpenStreetMap tiles load from CDN; do not rely on availability during an outage. FIRMS is optional and should be rate-limited/cached in production. No real dispatch, geocoding, SMS, encryption-at-rest, or legal incident classification is included. Validate all deployments with the relevant Macedonian authorities.

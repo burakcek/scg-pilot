@@ -83,9 +83,16 @@ def create_app(test_config=None):
 
     @app.context_processor
     def inject_globals():
+        unread_notifications = 0
+        if current_user.is_authenticated and current_user.role in ("agency", "admin", "police"):
+            unread_notifications = db().execute(
+                "SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0",
+                (current_user.id,),
+            ).fetchone()[0]
         return {"incident_types": INCIDENT_TYPES, "statuses": STATUSES, "priorities": PRIORITIES,
                 "type_labels": TYPE_LABELS, "status_labels": STATUS_LABELS,
-                "priority_labels": PRIORITY_LABELS, "visibility_labels": VISIBILITY_LABELS}
+                "priority_labels": PRIORITY_LABELS, "visibility_labels": VISIBILITY_LABELS,
+                "unread_notifications": unread_notifications}
 
     register_routes(app)
     return app
@@ -129,6 +136,12 @@ def init_db():
       id INTEGER PRIMARY KEY, actor_id INTEGER, action TEXT NOT NULL, incident_id INTEGER,
       details TEXT, created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, incident_id INTEGER,
+      kind TEXT NOT NULL, title TEXT NOT NULL, message TEXT NOT NULL,
+      is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(incident_id) REFERENCES incidents(id)
+    );
     """)
     for column in ("municipality", "region"):
         try:
@@ -153,6 +166,20 @@ def now(): return datetime.now(timezone.utc).isoformat()
 def audit(action, incident_id=None, details=""):
     db().execute("INSERT INTO audit_log(actor_id,action,incident_id,details,created_at) VALUES (?,?,?,?,?)",
                  (current_user.id if current_user.is_authenticated else None, action, incident_id, details, now()))
+    db().commit()
+
+def notify_staff(incident_id, kind, title, message, agency_id=None):
+    """Create in-app notifications for relevant operational users."""
+    query = "SELECT id FROM users WHERE role IN ('admin','police')"
+    params = []
+    if agency_id is not None:
+        query += " OR (role='agency' AND agency_id=?)"
+        params.append(agency_id)
+    recipients = db().execute(query, params).fetchall()
+    db().executemany(
+        "INSERT INTO notifications(user_id,incident_id,kind,title,message,created_at) VALUES (?,?,?,?,?,?)",
+        [(row["id"], incident_id, kind, title, message, now()) for row in recipients],
+    )
     db().commit()
 def roles_required(*roles):
     def decorator(view):
@@ -215,6 +242,34 @@ def register_routes(app):
     @login_required
     def logout(): logout_user(); return redirect(url_for("index"))
 
+    @app.route("/notifications")
+    @roles_required("agency", "admin", "police")
+    def notifications():
+        rows = db().execute(
+            "SELECT n.*, i.public_id FROM notifications n LEFT JOIN incidents i ON i.id=n.incident_id "
+            "WHERE n.user_id=? ORDER BY n.id DESC LIMIT 100",
+            (current_user.id,),
+        ).fetchall()
+        db().execute("UPDATE notifications SET is_read=1 WHERE user_id=?", (current_user.id,))
+        db().commit()
+        return render_template("notifications.html", notifications=rows)
+
+    @app.post("/notifications/<int:notification_id>/read")
+    @roles_required("agency", "admin", "police")
+    def mark_notification_read(notification_id):
+        db().execute("UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?", (notification_id, current_user.id))
+        db().commit()
+        return redirect(url_for("notifications"))
+
+    @app.route("/api/notifications")
+    @roles_required("agency", "admin", "police")
+    def notifications_api():
+        rows = db().execute(
+            "SELECT id,incident_id,kind,title,message,is_read,created_at FROM notifications "
+            "WHERE user_id=? ORDER BY id DESC LIMIT 50", (current_user.id,)
+        ).fetchall()
+        return jsonify([dict(row) for row in rows])
+
     @app.route("/report", methods=("GET","POST"))
     def report():
         if request.method == "POST":
@@ -236,7 +291,7 @@ def register_routes(app):
             reporter_name = "" if anonymous else request.form.get("reporter_name", "")[:120]
             contact = "" if anonymous else request.form.get("contact", "")[:120]
             values = (uuid.uuid4().hex[:12], incident_type, request.form.get("title","")[:160], request.form.get("description","")[:5000], lat, lon, request.form.get("priority","normal") if request.form.get("priority") in PRIORITIES else "normal", "reported", visibility, None, request.form.get("supporting_agencies",""), request.form.get("m_ethane","")[:2000], reporter_name, contact, filename, current_user.id if current_user.is_authenticated and not anonymous else None, now(), now())
-            cur = db().execute("""INSERT INTO incidents(public_id,type,title,description,latitude,longitude,priority,status,visibility,lead_agency_id,supporting_agencies,m_ethane,reporter_name,contact,photo_filename,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", values); db().commit(); audit("incident_created", cur.lastrowid); flash("Пријавата е зачувана.", "success"); return redirect(url_for("incident_detail", incident_id=cur.lastrowid))
+            cur = db().execute("""INSERT INTO incidents(public_id,type,title,description,latitude,longitude,priority,status,visibility,lead_agency_id,supporting_agencies,m_ethane,reporter_name,contact,photo_filename,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", values); db().commit(); audit("incident_created", cur.lastrowid); notify_staff(cur.lastrowid, "new_incident", "Нова пријава", f"Нова пријава: {TYPE_LABELS[incident_type]}", None); flash("Пријавата е зачувана.", "success"); return redirect(url_for("incident_detail", incident_id=cur.lastrowid))
         return render_template("report.html")
 
     @app.route("/incidents/<int:incident_id>", methods=("GET","POST"))
@@ -255,7 +310,11 @@ def register_routes(app):
             if sets:
                 params += [now(), incident_id]; db().execute("UPDATE incidents SET "+",".join(sets)+",updated_at=? WHERE id=?", params); db().commit(); audit("incident_changed", incident_id, ",".join(sets))
                 if "status=?" in sets: audit("status_transition", incident_id, request.form.get("status"))
-                if "lead_agency_id=?" in sets: audit("assignment", incident_id, request.form.get("lead_agency_id"))
+                if "status=?" in sets:
+                    notify_staff(incident_id, "status_changed", "Променет статус", f"Статус: {STATUS_LABELS[request.form.get('status')]}")
+                if "lead_agency_id=?" in sets:
+                    audit("assignment", incident_id, request.form.get("lead_agency_id"))
+                    notify_staff(incident_id, "assignment", "Доделен инцидент", "Ви е доделен нов инцидент.", int(request.form["lead_agency_id"]))
                 if "visibility=?" in sets and request.form.get("visibility") == "public": audit("redaction", incident_id, "operational fields hidden from public view")
             return redirect(url_for("incident_detail", incident_id=incident_id))
         agencies = db().execute("SELECT * FROM agencies ORDER BY name").fetchall()
