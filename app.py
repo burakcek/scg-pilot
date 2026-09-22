@@ -1,8 +1,10 @@
 """SCG Pilot demo application."""
 import os
+import smtplib
 import sqlite3
 import uuid
 from datetime import datetime, timezone
+from email.message import EmailMessage
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -54,6 +56,13 @@ STATUS_LABELS = {
 }
 PRIORITY_LABELS = {"low": "Низок", "normal": "Нормален", "high": "Висок", "critical": "Критичен"}
 VISIBILITY_LABELS = {"public": "Јавен", "internal": "Внатрешен", "restricted": "Ограничен", "service_only": "Само за надлежната служба"}
+EMAIL_ROUTING = {
+    "forest_fire": ["Противпожарна бригада", "Центар за управување со кризи", "Дирекција за заштита и спасување"],
+    "smoke": ["Противпожарна бригада", "Центар за управување со кризи"],
+    "flood": ["Дирекција за заштита и спасување", "Општина", "Центар за управување со кризи"],
+    "rescue": ["Планинска спасувачка служба", "Дирекција за заштита и спасување"],
+    "medical_emergency": ["Итна медицинска помош / Здравство", "Црвен крст"],
+}
 SCOPE_LABELS = {"national": "Национално", "region": "Регионално", "municipality": "Општинско", "restricted": "Ограничено"}
 SQ_TYPE_LABELS = {
     "forest_fire": "Zjarr pyjor", "smoke": "Tym", "illegal_logging": "Prerje ilegale",
@@ -203,6 +212,11 @@ def init_db():
       is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(incident_id) REFERENCES incidents(id)
     );
+    CREATE TABLE IF NOT EXISTS email_outbox (
+      id INTEGER PRIMARY KEY, incident_id INTEGER, recipient TEXT NOT NULL,
+      subject TEXT NOT NULL, body TEXT NOT NULL, delivery_status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
     """)
     for column in ("municipality", "region"):
         try:
@@ -247,6 +261,44 @@ def notify_staff(incident_id, kind, title, message, agency_id=None):
         [(row["id"], incident_id, kind, title, message, now()) for row in recipients],
     )
     db().commit()
+
+def send_demo_email(incident_id, recipient, subject, body):
+    """Record every email; send externally only when SMTP is explicitly configured."""
+    status = "demo_queued"
+    host = os.getenv("SMTP_HOST")
+    if host and os.getenv("SMTP_FROM"):
+        try:
+            msg = EmailMessage()
+            msg["From"] = os.getenv("SMTP_FROM")
+            msg["To"] = recipient
+            msg["Subject"] = subject
+            msg.set_content(body)
+            with smtplib.SMTP(host, int(os.getenv("SMTP_PORT", "587")), timeout=10) as smtp:
+                if os.getenv("SMTP_TLS", "1") == "1":
+                    smtp.starttls()
+                if os.getenv("SMTP_USERNAME"):
+                    smtp.login(os.getenv("SMTP_USERNAME"), os.getenv("SMTP_PASSWORD", ""))
+                smtp.send_message(msg)
+            status = "sent"
+        except (OSError, smtplib.SMTPException):
+            status = "send_failed"
+    db().execute(
+        "INSERT INTO email_outbox(incident_id,recipient,subject,body,delivery_status,created_at) VALUES (?,?,?,?,?,?)",
+        (incident_id, recipient, subject, body, status, now()),
+    )
+    db().commit()
+
+def route_incident_emails(incident_id, incident_type, title):
+    names = EMAIL_ROUTING.get(incident_type, ["Центар за управување со кризи"])
+    placeholders = ",".join("?" for _ in names)
+    recipients = db().execute(
+        f"SELECT u.email FROM users u JOIN agencies a ON a.id=u.agency_id "
+        f"WHERE u.role='agency' AND u.is_active=1 AND a.name IN ({placeholders})", names
+    ).fetchall()
+    subject = f"SCG Pilot: {TYPE_LABELS[incident_type]} — {title}"
+    body = f"Нова пријава за инцидент.\nТип: {TYPE_LABELS[incident_type]}\nНаслов: {title}\nОтворете ја контролна табла за детали."
+    for recipient in recipients:
+        send_demo_email(incident_id, recipient["email"], subject, body)
 def roles_required(*roles):
     def decorator(view):
         @wraps(view)
@@ -458,7 +510,7 @@ def register_routes(app):
             reporter_name = "" if anonymous else request.form.get("reporter_name", "")[:120]
             contact = "" if anonymous else request.form.get("contact", "")[:120]
             values = (uuid.uuid4().hex[:12], incident_type, request.form.get("title","")[:160], request.form.get("description","")[:5000], lat, lon, request.form.get("priority","normal") if request.form.get("priority") in PRIORITIES else "normal", "reported", visibility, None, request.form.get("supporting_agencies",""), request.form.get("m_ethane","")[:2000], reporter_name, contact, filename, current_user.id if current_user.is_authenticated and not anonymous else None, now(), now())
-            cur = db().execute("""INSERT INTO incidents(public_id,type,title,description,latitude,longitude,priority,status,visibility,lead_agency_id,supporting_agencies,m_ethane,reporter_name,contact,photo_filename,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", values); db().commit(); audit("incident_created", cur.lastrowid); notify_staff(cur.lastrowid, "new_incident", "Нова пријава", f"Нова пријава: {TYPE_LABELS[incident_type]}", None); flash("Пријавата е зачувана.", "success"); return redirect(url_for("incident_detail", incident_id=cur.lastrowid))
+            cur = db().execute("""INSERT INTO incidents(public_id,type,title,description,latitude,longitude,priority,status,visibility,lead_agency_id,supporting_agencies,m_ethane,reporter_name,contact,photo_filename,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", values); db().commit(); audit("incident_created", cur.lastrowid); notify_staff(cur.lastrowid, "new_incident", "Нова пријава", f"Нова пријава: {TYPE_LABELS[incident_type]}", None); route_incident_emails(cur.lastrowid, incident_type, request.form.get("title","")[:160]); flash("Пријавата е зачувана.", "success"); return redirect(url_for("incident_detail", incident_id=cur.lastrowid))
         return render_template("report.html")
 
     @app.route("/incidents/<int:incident_id>", methods=("GET","POST"))
@@ -502,6 +554,12 @@ def register_routes(app):
         rows = db().execute("SELECT * FROM incidents WHERE "+" AND ".join(where)+" ORDER BY id DESC", params).fetchall()
         audit("dashboard_access", details=request.query_string.decode())
         return render_template("dashboard.html", incidents=rows)
+
+    @app.route("/admin/email-outbox")
+    @admin_required
+    def admin_email_outbox():
+        emails = db().execute("SELECT * FROM email_outbox ORDER BY id DESC LIMIT 200").fetchall()
+        return render_template("email_outbox.html", emails=emails)
 
     @app.route("/agencies")
     def agencies():

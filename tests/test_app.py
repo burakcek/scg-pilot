@@ -97,6 +97,23 @@ def test_admin_can_manage_users(client):
     assert user["role"] == "agency"
     assert user["municipality"] == "Центар"
 
+def test_fire_routes_demo_email_to_agency(client):
+    with client.application.app_context():
+        agency_id = db().execute("SELECT id FROM agencies WHERE name=?", ("Противпожарна бригада",)).fetchone()["id"]
+        db().execute(
+            "INSERT INTO users(email,password_hash,name,role,agency_id,is_active,created_at) VALUES (?,?,?,?,?,?,?)",
+            ("fire@example.com", "hash", "Fire", "agency", agency_id, 1, "now"),
+        )
+        db().commit()
+    client.post("/report", data={
+        "type": "forest_fire", "title": "Fire", "description": "Smoke",
+        "latitude": "41.9", "longitude": "21.4", "anonymous": "on",
+    })
+    with client.application.app_context():
+        email = db().execute("SELECT recipient, delivery_status FROM email_outbox").fetchone()
+    assert email["recipient"] == "fire@example.com"
+    assert email["delivery_status"] == "demo_queued"
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)

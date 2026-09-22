@@ -64,6 +64,10 @@ M/ETHANE е задржан како меѓународен оперативен 
 
 Достапен е и избор `EN` за целосен англиски интерфејс преку `/language/en`. Report формата ги преведува и GPS инструкции, M/ETHANE објаснување/пример, анонимна пријава, контакт и фотографија.
 
+## Demo email известувања
+
+Нова пријава автоматски се рутира по тип: шумски пожар кон противпожарна бригада, ЦУК и ДЗС; поплава кон ДЗС/општина/ЦУК; спасување кон планинска спасувачка служба/ДЗС; медицинска итност кон итна медицинска помош/Црвен крст. Admin ги гледа demo пораките на `/admin/email-outbox`. Без `SMTP_*` променливи ништо не се праќа надвор од апликацијата. За вистинско праќање внеси SMTP provider credentials во Render Environment Variables, никогаш во repository.
+
 ## Pilot limitations
 
 Leaflet and OpenStreetMap tiles load from CDN; do not rely on availability during an outage. FIRMS is optional and should be rate-limited/cached in production. No real dispatch, geocoding, SMS, encryption-at-rest, or legal incident classification is included. Validate all deployments with the relevant Macedonian authorities.

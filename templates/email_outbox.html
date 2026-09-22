@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Demo е-пошта</h1>
+<p>Овде се гледаат известувањата што би биле испратени до службите. Без SMTP поставки, тие остануваат во demo outbox.</p>
+<table><tr><th>Примач</th><th>Наслов</th><th>Статус</th><th>Време</th></tr>
+{% for email in emails %}<tr><td>{{email.recipient}}</td><td>{{email.subject}}</td><td>{{email.delivery_status}}</td><td>{{email.created_at}}</td></tr>{% else %}<tr><td colspan="4">Нема demo е-пораки.</td></tr>{% endfor %}</table>
+{% endblock %}
