@@ -72,6 +72,11 @@ def test_english_language_switch(client):
     assert b"Anonymous report" in report
     assert b"Photo (maximum 5 MB)" in report
 
+def test_install_assets_are_available(client):
+    assert client.get("/manifest.webmanifest").status_code == 200
+    assert client.get("/service-worker.js").status_code == 200
+    assert b"install-app" in client.get("/").data
+
 def test_dashboard_requires_role(client):
     assert client.get("/dashboard").status_code == 302
     register(client)
