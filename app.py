@@ -39,6 +39,21 @@ STATUSES = ["reported", "triaged", "acknowledged", "verified", "assigned", "in_p
 PRIORITIES = ["low", "normal", "high", "critical"]
 VISIBILITIES = ["public", "internal", "restricted", "service_only"]
 ROLES = ["citizen", "agency", "admin", "police"]
+TYPE_LABELS = {
+    "forest_fire": "Шумски пожар", "smoke": "Дим", "illegal_logging": "Нелегална сеч",
+    "house_theft": "Кражба во дом", "illegal_transport": "Нелегален транспорт",
+    "illegal_border_crossing": "Нелегално преминување граница",
+    "illegal_construction": "Нелегална градба", "flood": "Поплава",
+    "rescue": "Спасување", "medical_emergency": "Медицинска итност",
+}
+STATUS_LABELS = {
+    "reported": "Пријавен", "triaged": "Сортиран", "acknowledged": "Потврден прием",
+    "verified": "Проверен", "assigned": "Доделен", "in_progress": "Во тек",
+    "contained": "Ставена под контрола", "resolved": "Решен", "closed": "Затворен",
+    "reopened": "Повторно отворен", "false_report": "Лажна пријава", "duplicate": "Дупликат",
+}
+PRIORITY_LABELS = {"low": "Низок", "normal": "Нормален", "high": "Висок", "critical": "Критичен"}
+VISIBILITY_LABELS = {"public": "Јавен", "internal": "Внатрешен", "restricted": "Ограничен", "service_only": "Само за надлежната служба"}
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
@@ -68,7 +83,9 @@ def create_app(test_config=None):
 
     @app.context_processor
     def inject_globals():
-        return {"incident_types": INCIDENT_TYPES, "statuses": STATUSES, "priorities": PRIORITIES}
+        return {"incident_types": INCIDENT_TYPES, "statuses": STATUSES, "priorities": PRIORITIES,
+                "type_labels": TYPE_LABELS, "status_labels": STATUS_LABELS,
+                "priority_labels": PRIORITY_LABELS, "visibility_labels": VISIBILITY_LABELS}
 
     register_routes(app)
     return app

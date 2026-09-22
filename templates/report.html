@@ -3,7 +3,7 @@
 <h1>Пријави инцидент</h1>
 <p>Може да пријавиш без регистрација. За итни случаи јави се на 112.</p>
 <form method="post" enctype="multipart/form-data">
-  <label>Тип<select name="type">{% for x in incident_types %}<option>{{x}}</option>{% endfor %}</select></label>
+  <label>Тип<select name="type">{% for x in incident_types %}<option value="{{x}}">{{type_labels[x]}}</option>{% endfor %}</select></label>
   <label>Наслов<input name="title" required maxlength="160"></label>
   <label>Опис<textarea name="description" required maxlength="5000"></textarea></label>
   <label>Latitude<input id="latitude" name="latitude" value="41.998" required></label>
@@ -12,7 +12,7 @@
   <p id="location-status" role="status"></p>
   <div id="report-map"></div>
   <small>Кликни на мапата или помести го marker-от за рачно да ја означиш локацијата.</small>
-  <label>Приоритет<select name="priority">{% for x in priorities %}<option>{{x}}</option>{% endfor %}</select></label>
+  <label>Приоритет<select name="priority">{% for x in priorities %}<option value="{{x}}">{{priority_labels[x]}}</option>{% endfor %}</select></label>
   <label>M/ETHANE<textarea name="m_ethane" maxlength="2000"></textarea></label>
   <label><input type="checkbox" name="anonymous" id="anonymous" checked> Анонимна пријава (не зачувува име, контакт или корисничка сметка)</label>
   <div id="contact-fields">
