@@ -13,7 +13,13 @@
   <div id="report-map"></div>
   <small>Кликни на мапата или помести го marker-от за рачно да ја означиш локацијата.</small>
   <label>Приоритет<select name="priority">{% for x in priorities %}<option value="{{x}}">{{priority_labels[x]}}</option>{% endfor %}</select></label>
-  <label>M/ETHANE<textarea name="m_ethane" maxlength="2000"></textarea></label>
+  <label>M/ETHANE — стандардизирани информации за итен настан
+    <small>
+      Кратко внеси: број на повредени/загрозени лица, точна локација,
+      вид на настан, опасности, пристап до местото, потребна помош и број на лица.
+    </small>
+    <textarea name="m_ethane" maxlength="2000" placeholder="Пример: 2 повредени; локација; пожар; чад; пристап преку главен пат; потребна брза помош и пожарна; 5 лица на локацијата."></textarea>
+  </label>
   <label><input type="checkbox" name="anonymous" id="anonymous" checked> Анонимна пријава (не зачувува име, контакт или корисничка сметка)</label>
   <div id="contact-fields">
     <label>Име на пријавувач<input name="reporter_name" id="reporter_name"></label>

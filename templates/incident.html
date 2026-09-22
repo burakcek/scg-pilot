@@ -6,7 +6,7 @@
 <div id="map"></div>
 {% if not safe %}
 <h2>Оперативни детали</h2>
-<p>M/ETHANE: {{incident.m_ethane}}<br>Пријавувач: {{incident.reporter_name or 'Анонимно'}} · Контакт: {{incident.contact or 'Не е наведен'}}</p>
+<p><b>M/ETHANE — информации за итен настан:</b> {{incident.m_ethane or 'Не е внесено'}}<br>Пријавувач: {{incident.reporter_name or 'Анонимно'}} · Контакт: {{incident.contact or 'Не е наведен'}}</p>
 <form method="post">
   <label>Статус<select name="status">{% for x in statuses %}<option value="{{x}}" {% if x==incident.status %}selected{% endif %}>{{status_labels[x]}}</option>{% endfor %}</select></label>
   <label>Приоритет<select name="priority">{% for x in priorities %}<option value="{{x}}" {% if x==incident.priority %}selected{% endif %}>{{priority_labels[x]}}</option>{% endfor %}</select></label>

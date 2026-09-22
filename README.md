@@ -42,6 +42,8 @@ Use `flask --app app create-account` to provision a non-public `agency` or `poli
 
 Incidents support requested types, M/ETHANE, coordinates, reporter/contact, image upload (5 MB application limit), lead/supporting agencies, visibility, priority and lifecycle statuses. Audit entries cover login, dashboard access, create and changes. This demo's service authorization is role-based; production must add verified agency scope, SSO/MFA, retention policy, malware scanning and immutable audit storage.
 
+M/ETHANE е задржан како меѓународен оперативен термин, но во формата има македонско објаснување: број на загрозени/повредени, локација, вид на настан, опасности, пристап, потребна помош и број на лица.
+
 ## Pilot limitations
 
 Leaflet and OpenStreetMap tiles load from CDN; do not rely on availability during an outage. FIRMS is optional and should be rate-limited/cached in production. No real dispatch, geocoding, SMS, encryption-at-rest, or legal incident classification is included. Validate all deployments with the relevant Macedonian authorities.
